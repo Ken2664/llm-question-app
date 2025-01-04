@@ -184,6 +184,12 @@ export default function Home() {
                         >
                             質問ページへ
                         </Link>
+                        <Link 
+                            href="/profile"
+                            className="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600"
+                        >
+                            プロフィール
+                        </Link>
                     </div>
 
                     <div className="mb-8">
