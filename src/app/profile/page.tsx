@@ -58,23 +58,23 @@ export default function ProfilePage() {
     };
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div className="container">
             <nav>
-                <Link href="/">トップ</Link> / プロフィール
+                <Link href="/" className="link">トップ</Link> / プロフィール
             </nav>
-            <div style={{ marginTop: '20px' }}>
+            <div className="mt-6">
                 <h2 className="text-xl font-semibold mb-4">プロフィール設定</h2>
                 <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="名前を入力してください"
-                    style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                    className="w-full p-2 mb-4 border rounded"
                 />
                 <select
                     value={selectedFaculty ?? ''}
                     onChange={(e) => setSelectedFaculty(Number(e.target.value))}
-                    style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                    className="w-full p-2 mb-4 border rounded"
                 >
                     <option value="">学部を選択してください</option>
                     {faculties.map((faculty) => (
@@ -85,11 +85,11 @@ export default function ProfilePage() {
                 </select>
                 <button
                     onClick={handleSaveProfile}
-                    style={{ width: '100%', padding: '10px', backgroundColor: '#00796b', color: '#fff', border: 'none', borderRadius: '5px' }}
+                    className="w-full p-2 bg-blue-500 text-white rounded"
                 >
                     プロフィールを保存
                 </button>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
+                {error && <p className="text-red-500 mt-4">{error}</p>}
             </div>
         </div>
     );

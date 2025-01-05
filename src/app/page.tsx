@@ -55,6 +55,7 @@ export default function Home() {
     const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
     const [selectedLectureDate, setSelectedLectureDate] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [showUnsolvedOnly, setShowUnsolvedOnly] = useState(false);
 
     useEffect(() => {
         const getSession = async () => {
@@ -145,6 +146,9 @@ export default function Home() {
         if (searchQuery) {
             query = query.ilike('question_text', `%${searchQuery}%`);
         }
+        if (showUnsolvedOnly) {
+            query = query.eq('solved', false);
+        }
 
         const { data, error } = await query;
         if (error) {
@@ -160,12 +164,12 @@ export default function Home() {
     };
 
     return (
-        <div className="container mx-auto p-4">
+        <div className="container">
             <h1 className="text-2xl font-bold mb-4">LLM質問応答アプリケーション</h1>
             {!user ? (
                 <button 
                     onClick={handleLogin}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    className="w-full p-2 bg-blue-500 text-white rounded"
                 >
                     Googleでログイン
                 </button>
@@ -174,21 +178,21 @@ export default function Home() {
                     <div className="flex justify-between items-center mb-6">
                         <button 
                             onClick={handleLogout}
-                            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                            className="p-2 bg-red-500 text-white rounded"
                         >
                             ログアウト
                         </button>
                         <Link 
                             href="/ask"
-                            className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600"
+                            className="button"
                         >
                             質問ページへ
                         </Link>
                         <Link 
-                            href="/profile"
-                            className="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600"
+                            href="/mypage"
+                            className="button"
                         >
-                            プロフィール
+                            マイページ
                         </Link>
                     </div>
 
@@ -232,9 +236,18 @@ export default function Home() {
                                 onChange={(e) => setSelectedLectureDate(e.target.value)}
                                 className="p-2 border rounded"
                             />
+                            <label className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    checked={showUnsolvedOnly}
+                                    onChange={(e) => setShowUnsolvedOnly(e.target.checked)}
+                                    className="mr-2"
+                                />
+                                未解決のみ表示
+                            </label>
                             <button
                                 type="submit"
-                                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                className="p-2 bg-blue-500 text-white rounded"
                             >
                                 検索
                             </button>

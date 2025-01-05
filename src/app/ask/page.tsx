@@ -188,16 +188,16 @@ export default function AskPage() {
     };
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div className="container">
             <nav>
-                <Link href="/">トップ</Link> / QA
+                <Link href="/" className="link">トップ</Link> / QA
             </nav>
             <div>
-                <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
+                <form onSubmit={handleSubmit} className="mt-6">
                     <select
                         value={selectedFaculty ?? ''}
                         onChange={(e) => setSelectedFaculty(Number(e.target.value))}
-                        style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                        className="w-full p-2 mb-4 border rounded"
                     >
                         <option value="">学部を選択してください</option>
                         {faculties.map((faculty) => (
@@ -209,7 +209,7 @@ export default function AskPage() {
                     <select
                         value={selectedCourse ?? ''}
                         onChange={(e) => setSelectedCourse(Number(e.target.value))}
-                        style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                        className="w-full p-2 mb-4 border rounded"
                     >
                         <option value="">講義名を選択してください</option>
                         {courses.map((course) => (
@@ -222,50 +222,36 @@ export default function AskPage() {
                         type="date"
                         value={selectedLectureDate}
                         onChange={(e) => setSelectedLectureDate(e.target.value)}
-                        style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                        className="w-full p-2 mb-4 border rounded"
                     />
                     <input
                         type="text"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                         placeholder="質問を入力してください"
-                        style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                        className="w-full p-2 mb-4 border rounded"
                     />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <div className="flex justify-between mb-4">
                         <button
                             type="button"
                             onClick={() => handleSolvedChange(true)}
-                            style={{
-                                width: '48%',
-                                padding: '10px',
-                                backgroundColor: solved === true ? '#4CAF50' : '#e0e0e0',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '5px'
-                            }}
+                            className={`w-48 p-2 ${solved === true ? 'bg-green-500' : 'bg-gray-300'} text-white rounded`}
                         >
                             解決済み
                         </button>
                         <button
                             type="button"
                             onClick={() => handleSolvedChange(false)}
-                            style={{
-                                width: '48%',
-                                padding: '10px',
-                                backgroundColor: solved === false ? '#f44336' : '#e0e0e0',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '5px'
-                            }}
+                            className={`w-48 p-2 ${solved === false ? 'bg-red-500' : 'bg-gray-300'} text-white rounded`}
                         >
                             未解決
                         </button>
                     </div>
-                    <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#00796b', color: '#fff', border: 'none', borderRadius: '5px' }}>
+                    <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded">
                         送信
                     </button>
                 </form>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
+                {error && <p className="text-red-500 mt-4">{error}</p>}
             </div>
 
             <div className="mt-8">
@@ -275,9 +261,9 @@ export default function AskPage() {
                     value={newFaculty}
                     onChange={(e) => setNewFaculty(e.target.value)}
                     placeholder="新しい学部名"
-                    style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                    className="w-full p-2 mb-4 border rounded"
                 />
-                <button onClick={addNewFaculty} style={{ width: '100%', padding: '10px', backgroundColor: '#00796b', color: '#fff', border: 'none', borderRadius: '5px' }}>
+                <button onClick={addNewFaculty} className="w-full p-2 bg-blue-500 text-white rounded">
                     学部を追加
                 </button>
 
@@ -287,9 +273,9 @@ export default function AskPage() {
                     value={newCourse}
                     onChange={(e) => setNewCourse(e.target.value)}
                     placeholder="新しい講義名"
-                    style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
+                    className="w-full p-2 mb-4 border rounded"
                 />
-                <button onClick={addNewCourse} style={{ width: '100%', padding: '10px', backgroundColor: '#00796b', color: '#fff', border: 'none', borderRadius: '5px' }}>
+                <button onClick={addNewCourse} className="w-full p-2 bg-blue-500 text-white rounded">
                     講義名を追加
                 </button>
             </div>
