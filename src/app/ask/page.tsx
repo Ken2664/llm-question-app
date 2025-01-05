@@ -31,8 +31,31 @@ export default function AskPage() {
             else setCourses(data || []);
         };
 
+        const fetchUserFaculty = async () => {
+            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !sessionData.session) {
+                console.error('Error fetching session:', sessionError);
+                setError('セッションが無効です。再度ログインしてください。');
+                return;
+            }
+
+            const userId = sessionData.session.user.id;
+            const { data, error } = await supabase
+                .from('users')
+                .select('faculty_id')
+                .eq('id', userId)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user faculty:', error);
+            } else {
+                setSelectedFaculty(data?.faculty_id || null);
+            }
+        };
+
         fetchFaculties();
         fetchCourses();
+        fetchUserFaculty();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
