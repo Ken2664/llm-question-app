@@ -1,262 +1,267 @@
-"use client";
-import { createClient } from '@supabase/supabase-js'
-import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabaseClient';
-import { User } from '@supabase/supabase-js';
-import Link from 'next/link';
+'use client'
 
-type QuestionWithRelations = {
-    id: number;
-    question_text: string;
-    answer_text: string | null;
-    lecture: {
-        id: number;
-        date: string;
-        course: {
-            course_id: number;
-            name: string;
-            faculty: {
-                faculty_id: number;
-                name: string;
-            }
-        }
-    }
+import { useState, useEffect } from 'react'
+import { User } from '@supabase/supabase-js'
+import Link from 'next/link'
+import { supabase } from '@/utils/supabaseClient'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { LogIn, LogOut, Search, PlusCircle, UserIcon } from 'lucide-react'
+
+type Question = {
+  id: number
+  question_text: string
+  answer_text: string | null
+  solved: boolean
 }
 
-function QuestionList({ questions }: { questions: { id: number; question_text: string; answer_text: string | null; solved: boolean }[] }) {
-    return (
-        <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">質問一覧</h2>
-            <ul className="space-y-4">
-                {questions.map((q) => (
-                    <li key={q.id} className="border p-4 rounded cursor-pointer">
-                        <Link href={`/question/${q.id}`} legacyBehavior>
-                            <a>
-                                <strong>質問:</strong> {q.question_text}
-                                <span style={{ marginLeft: '10px', color: q.solved ? '#4CAF50' : '#f44336' }}>
-                                    {q.solved ? '✅' : '❌'}
-                                </span>
-                            </a>
-                        </Link>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
+function QuestionList({ questions }: { questions: Question[] }) {
+  return (
+    <ul className="space-y-4">
+      {questions.map((q) => (
+        <li key={q.id}>
+          <Link href={`/question/${q.id}`}>
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{q.question_text}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {q.answer_text ? '回答あり' : '未回答'}
+                  </p>
+                </div>
+                <span className={`text-2xl ${q.solved ? 'text-green-500' : 'text-red-500'}`}>
+                  {q.solved ? '✅' : '❌'}
+                </span>
+              </CardContent>
+            </Card>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export default function Home() {
-    const [user, setUser] = useState<User | null>(null);
-    const [lectures, setLectures] = useState<{ id: number; number: number }[]>([]);
-    const [questions, setQuestions] = useState<{ id: number; question_text: string; answer_text: string | null; solved: boolean }[]>([]);
-    const [faculties, setFaculties] = useState<{ faculty_id: number; name: string }[]>([]);
-    const [courses, setCourses] = useState<{ course_id: number; name: string }[]>([]);
-    const [selectedFaculty, setSelectedFaculty] = useState<number | null>(null);
-    const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
-    const [selectedLectureDate, setSelectedLectureDate] = useState<string>('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showUnsolvedOnly, setShowUnsolvedOnly] = useState(false);
+  const [user, setUser] = useState<User | null>(null)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [faculties, setFaculties] = useState<{ faculty_id: number; name: string }[]>([])
+  const [courses, setCourses] = useState<{ course_id: number; name: string }[]>([])
+  const [selectedFaculty, setSelectedFaculty] = useState<string>('')
+  const [selectedCourse, setSelectedCourse] = useState<string>('')
+  const [selectedLectureDate, setSelectedLectureDate] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showUnsolvedOnly, setShowUnsolvedOnly] = useState(false)
 
-    useEffect(() => {
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
-        };
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user ?? null)
+    }
 
-        getSession();
+    getSession()
 
-        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-        });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
 
-        return () => {
-            authListener.subscription.unsubscribe();
-        };
-    }, []);
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
+  }, [])
 
-    useEffect(() => {
-        const fetchLectures = async () => {
-            const { data, error } = await supabase
-                .from('lectures')
-                .select('*');
-            if (error) console.error('Error fetching lectures:', error);
-            else setLectures(data);
-        };
+  useEffect(() => {
+    const fetchFaculties = async () => {
+      const { data, error } = await supabase.from('faculties').select('faculty_id, name')
+      if (error) console.error('Error fetching faculties:', error)
+      else setFaculties(data || [])
+    }
 
-        fetchLectures();
-    }, []);
+    const fetchCourses = async () => {
+      const { data, error } = await supabase.from('courses').select('course_id, name')
+      if (error) console.error('Error fetching courses:', error)
+      else setCourses(data || [])
+    }
 
-    useEffect(() => {
-        const fetchFaculties = async () => {
-            const { data, error } = await supabase.from('faculties').select('faculty_id, name');
-            if (error) console.error('Error fetching faculties:', error);
-            else setFaculties(data || []);
-        };
+    fetchFaculties()
+    fetchCourses()
+  }, [])
 
-        const fetchCourses = async () => {
-            const { data, error } = await supabase.from('courses').select('course_id, name');
-            if (error) console.error('Error fetching courses:', error);
-            else setCourses(data || []);
-        };
+  const handleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
+    if (error) console.error('Error logging in:', error.message)
+  }
 
-        fetchFaculties();
-        fetchCourses();
-    }, []);
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (error) console.error('Error logging out:', error.message)
+  }
 
-    const handleLogin = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-        if (error) console.error('Error logging in:', error.message);
-    };
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
 
-    const handleLogout = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) console.error('Error logging out:', error.message);
-    };
+    let query = supabase
+      .from('questions')
+      .select(`
+        *,
+        lectures!inner (
+          id,
+          date,
+          courses!inner (
+            course_id,
+            name,
+            faculties!inner (
+              faculty_id,
+              name
+            )
+          )
+        )
+      `)
 
-    const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    if (selectedFaculty) {
+      query = query.eq('lectures.courses.faculties.faculty_id', selectedFaculty)
+    }
+    if (selectedCourse) {
+      query = query.eq('lectures.courses.course_id', selectedCourse)
+    }
+    if (selectedLectureDate) {
+      query = query.eq('lectures.date', selectedLectureDate)
+    }
+    if (searchQuery) {
+      query = query.ilike('question_text', `%${searchQuery}%`)
+    }
+    if (showUnsolvedOnly) {
+      query = query.eq('solved', false)
+    }
 
-        let query = supabase
-            .from('questions')
-            .select(`
-                *,
-                lectures!inner (
-                    id,
-                    date,
-                    courses!inner (
-                        course_id,
-                        name,
-                        faculties!inner (
-                            faculty_id,
-                            name
-                        )
-                    )
-                )
-            `);
+    const { data, error } = await query
+    if (error) {
+      console.error('Error searching questions:', error)
+    } else {
+      setQuestions(data.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        answer_text: q.answer_text,
+        solved: q.solved
+      })))
+    }
+  }
 
-        if (selectedFaculty) {
-            query = query.eq('lectures.courses.faculties.faculty_id', selectedFaculty);
-        }
-        if (selectedCourse) {
-            query = query.eq('lectures.courses.course_id', selectedCourse);
-        }
-        if (selectedLectureDate) {
-            query = query.eq('lectures.date', selectedLectureDate);
-        }
-        if (searchQuery) {
-            query = query.ilike('question_text', `%${searchQuery}%`);
-        }
-        if (showUnsolvedOnly) {
-            query = query.eq('solved', false);
-        }
-
-        const { data, error } = await query;
-        if (error) {
-            console.error('Error searching questions:', error);
-        } else {
-            setQuestions(data.map(q => ({
-                id: q.id,
-                question_text: q.question_text,
-                answer_text: q.answer_text,
-                solved: q.solved
-            })));
-        }
-    };
-
-    return (
-        <div className="container">
-            <h1 className="text-2xl font-bold mb-4">LLM質問応答アプリケーション</h1>
-            {!user ? (
-                <button 
-                    onClick={handleLogin}
-                    className="w-full p-2 bg-blue-500 text-white rounded"
-                >
-                    Googleでログイン
-                </button>
-            ) : (
-                <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <button 
-                            onClick={handleLogout}
-                            className="p-2 bg-red-500 text-white rounded"
-                        >
-                            ログアウト
-                        </button>
-                        <Link 
-                            href="/ask"
-                            className="button"
-                        >
-                            質問ページへ
-                        </Link>
-                        <Link 
-                            href="/mypage"
-                            className="button"
-                        >
-                            マイページ
-                        </Link>
-                    </div>
-
-                    <div className="mb-8">
-                        <h2 className="text-xl font-semibold mb-4">質問を検索</h2>
-                        <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <input
-                                type="text"
-                                placeholder="キーワードで検索"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="p-2 border rounded"
-                            />
-                            <select
-                                value={selectedFaculty ?? ''}
-                                onChange={(e) => setSelectedFaculty(Number(e.target.value))}
-                                className="p-2 border rounded"
-                            >
-                                <option value="">学部を選択してください</option>
-                                {faculties.map((faculty) => (
-                                    <option key={faculty.faculty_id} value={faculty.faculty_id}>
-                                        {faculty.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <select
-                                value={selectedCourse ?? ''}
-                                onChange={(e) => setSelectedCourse(Number(e.target.value))}
-                                className="p-2 border rounded"
-                            >
-                                <option value="">質義名を選択してください</option>
-                                {courses.map((course) => (
-                                    <option key={course.course_id} value={course.course_id}>
-                                        {course.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <input
-                                type="date"
-                                value={selectedLectureDate}
-                                onChange={(e) => setSelectedLectureDate(e.target.value)}
-                                className="p-2 border rounded"
-                            />
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    checked={showUnsolvedOnly}
-                                    onChange={(e) => setShowUnsolvedOnly(e.target.checked)}
-                                    className="mr-2"
-                                />
-                                未解決のみ表示
-                            </label>
-                            <button
-                                type="submit"
-                                className="p-2 bg-blue-500 text-white rounded"
-                            >
-                                検索
-                            </button>
-                        </form>
-                    </div>
-
-                    <QuestionList questions={questions} />
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">LLM質問応答アプリケーション</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!user ? (
+            <Button onClick={handleLogin} className="w-full">
+              <LogIn className="mr-2 h-4 w-4" /> Googleでログイン
+            </Button>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Button onClick={handleLogout} variant="outline">
+                  <LogOut className="mr-2 h-4 w-4" /> ログアウト
+                </Button>
+                <div className="space-x-2">
+                  <Button asChild>
+                    <Link href="/ask">
+                      <PlusCircle className="mr-2 h-4 w-4" /> 質問する
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/mypage">
+                      <UserIcon className="mr-2 h-4 w-4" /> マイページ
+                    </Link>
+                  </Button>
                 </div>
-            )}
-        </div>
-    );
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>質問を検索</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSearch} className="space-y-4">
+                    <Input
+                      type="text"
+                      placeholder="キーワードで検索"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Select onValueChange={setSelectedFaculty} value={selectedFaculty}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="学部を選択してください" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {faculties.map((faculty) => (
+                            <SelectItem key={faculty.faculty_id} value={faculty.faculty_id.toString()}>
+                              {faculty.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select onValueChange={setSelectedCourse} value={selectedCourse}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="講義名を選択してください" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {courses.map((course) => (
+                            <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                              {course.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      type="date"
+                      value={selectedLectureDate}
+                      onChange={(e) => setSelectedLectureDate(e.target.value)}
+                    />
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="unsolved"
+                        checked={showUnsolvedOnly}
+                        onCheckedChange={(checked) => setShowUnsolvedOnly(checked as boolean)}
+                      />
+                      <label
+                        htmlFor="unsolved"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        未解決のみ表示
+                      </label>
+                    </div>
+                    <Button type="submit" className="w-full">
+                      <Search className="mr-2 h-4 w-4" /> 検索
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>質問一覧</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <QuestionList questions={questions} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
+

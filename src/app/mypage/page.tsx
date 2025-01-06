@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../utils/supabaseClient';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface Question {
     id: string;
@@ -59,40 +61,40 @@ export default function MyPage() {
     }, [user, unresolvedQuestions]);
 
     return (
-        <div className="container mx-auto p-6 bg-white shadow-md rounded-lg">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">マイページ</h1>
-            <div className="mb-10">
-                <h2 className="text-2xl font-semibold mb-4 text-gray-700">お知らせ</h2>
-                {notifications.length > 0 ? (
-                    <ul className="space-y-4">
-                        {unresolvedQuestions.map((question) => (
-                            notifications.includes(question.id) && (
-                                <li key={question.id} className="border p-4 rounded-lg hover:bg-gray-100 transition">
-                                    <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
-                                        <strong>質問:</strong> {question.question_text}
-                                    </Link>
-                                </li>
-                            )
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-gray-600">新しいコメントはありません。</p>
-                )}
-            </div>
-            <div className="flex space-x-4">
-                <Link
-                    href="/"
-                    className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition"
-                >
-                    トップページに戻る
-                </Link>
-                <Link
-                    href="/profile"
-                    className="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition"
-                >
-                    プロフィールを更新
-                </Link>
-            </div>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <Card>
+                <CardHeader>
+                    <CardTitle>マイページ</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="mb-10">
+                        <h2 className="text-2xl font-semibold mb-4 text-gray-700">お知らせ</h2>
+                        {notifications.length > 0 ? (
+                            <ul className="space-y-4">
+                                {unresolvedQuestions.map((question) => (
+                                    notifications.includes(question.id) && (
+                                        <li key={question.id} className="border p-4 rounded-lg hover:bg-gray-100 transition">
+                                            <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
+                                                <strong>質問:</strong> {question.question_text}
+                                            </Link>
+                                        </li>
+                                    )
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-600">新しいコメントはありません。</p>
+                        )}
+                    </div>
+                    <div className="flex space-x-4">
+                        <Button asChild className="bg-blue-500 text-white">
+                            <Link href="/">トップページに戻る</Link>
+                        </Button>
+                        <Button asChild className="bg-yellow-500 text-white">
+                            <Link href="/profile">プロフィールを更新</Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 } 

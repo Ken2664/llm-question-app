@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../utils/supabaseClient';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function ProfilePage() {
     const [user, setUser] = useState<User | null>(null);
@@ -58,39 +60,40 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="container">
-            <nav>
-                <Link href="/" className="link">トップ</Link> / プロフィール
-            </nav>
-            <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-4">プロフィール設定</h2>
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="名前を入力してください"
-                    className="w-full p-2 mb-4 border rounded"
-                />
-                <select
-                    value={selectedFaculty ?? ''}
-                    onChange={(e) => setSelectedFaculty(Number(e.target.value))}
-                    className="w-full p-2 mb-4 border rounded"
-                >
-                    <option value="">学部を選択してください</option>
-                    {faculties.map((faculty) => (
-                        <option key={faculty.faculty_id} value={faculty.faculty_id}>
-                            {faculty.name}
-                        </option>
-                    ))}
-                </select>
-                <button
-                    onClick={handleSaveProfile}
-                    className="w-full p-2 bg-blue-500 text-white rounded"
-                >
-                    プロフィールを保存
-                </button>
-                {error && <p className="text-red-500 mt-4">{error}</p>}
-            </div>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <Card>
+                <CardHeader>
+                    <CardTitle>プロフィール設定</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="名前を入力してください"
+                        className="w-full p-2 mb-4 border rounded"
+                    />
+                    <select
+                        value={selectedFaculty ?? ''}
+                        onChange={(e) => setSelectedFaculty(Number(e.target.value))}
+                        className="w-full p-2 mb-4 border rounded"
+                    >
+                        <option value="">学部を選択してください</option>
+                        {faculties.map((faculty) => (
+                            <option key={faculty.faculty_id} value={faculty.faculty_id}>
+                                {faculty.name}
+                            </option>
+                        ))}
+                    </select>
+                    <Button
+                        onClick={handleSaveProfile}
+                        className="w-full"
+                    >
+                        プロフィールを保存
+                    </Button>
+                    {error && <p className="text-red-500 mt-4">{error}</p>}
+                </CardContent>
+            </Card>
         </div>
     );
 } 

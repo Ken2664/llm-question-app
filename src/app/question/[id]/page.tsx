@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../utils/supabaseClient';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function QuestionDetailPage() {
     const router = useRouter();
@@ -74,16 +77,22 @@ export default function QuestionDetailPage() {
     }
 
     return (
-        <div className="container">
-            <h1 className="text-2xl font-bold mb-4">質問詳細</h1>
-            <div className="flex flex-col space-y-2">
-                <div className="self-end bg-blue-500 text-white p-3 rounded-lg max-w-xs">
-                    <strong>質問:</strong> {question.question_text}
-                </div>
-                <div className="self-start bg-gray-200 p-3 rounded-lg max-w-xs">
-                    <strong>回答:</strong> {question.answer_text || '未回答'}
-                </div>
-            </div>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <Card>
+                <CardHeader>
+                    <CardTitle>質問詳細</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col space-y-2">
+                        <div className="self-end bg-blue-500 text-white p-3 rounded-lg max-w-xs">
+                            <strong>質問:</strong> {question.question_text}
+                        </div>
+                        <div className="self-start bg-gray-200 p-3 rounded-lg max-w-xs">
+                            <strong>回答:</strong> {question.answer_text || '未回答'}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
             <div className="mt-8">
                 <h2 className="text-xl font-semibold mb-4">コメント</h2>
                 <ul className="space-y-4">
@@ -94,25 +103,25 @@ export default function QuestionDetailPage() {
                         </li>
                     ))}
                 </ul>
-                <textarea
+                <Textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="コメントを入力してください"
                     className="w-full p-2 border rounded mt-4"
                 />
-                <button
+                <Button
                     onClick={handleCommentSubmit}
-                    className="w-full p-2 bg-blue-500 text-white rounded mt-2"
+                    className="w-full mt-2"
                 >
                     コメントを送信
-                </button>
+                </Button>
             </div>
-            <button 
+            <Button 
                 onClick={() => router.back()}
-                className="w-full p-2 bg-red-500 text-white rounded mt-4"
+                className="w-full mt-4 bg-red-500 text-white"
             >
                 戻る
-            </button>
+            </Button>
         </div>
     );
 } 
