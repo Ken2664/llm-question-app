@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { LogIn, LogOut, Search, PlusCircle, UserIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 type Question = {
   id: number
@@ -60,6 +61,7 @@ export default function Home() {
   const [selectedLectureDate, setSelectedLectureDate] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showUnsolvedOnly, setShowUnsolvedOnly] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const getSession = async () => {
@@ -155,6 +157,15 @@ export default function Home() {
     }
   }
 
+  const handleSignUp = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+    if (error) {
+        console.error('Error signing up:', error.message);
+    } else {
+        router.push('/profile');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Card className="mb-8">
@@ -163,9 +174,14 @@ export default function Home() {
         </CardHeader>
         <CardContent>
           {!user ? (
-            <Button onClick={handleLogin} className="w-full">
-              <LogIn className="mr-2 h-4 w-4" /> Googleでログイン
-            </Button>
+            <div className="space-y-4">
+              <Button onClick={handleLogin} className="w-full">
+                <LogIn className="mr-2 h-4 w-4" /> Googleでログイン
+              </Button>
+              <Button onClick={handleSignUp} className="w-full">
+                <LogIn className="mr-2 h-4 w-4" /> Googleで新規登録
+              </Button>
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="flex justify-between items-center">

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Bell, Home, UserCircle } from 'lucide-react';
 
 interface Question {
     id: string;
@@ -64,11 +65,13 @@ export default function MyPage() {
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <Card>
                 <CardHeader>
-                    <CardTitle>マイページ</CardTitle>
+                    <CardTitle className="text-2xl font-bold">マイページ</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="mb-10">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-700">お知らせ</h2>
+                        <h2 className="text-xl font-semibold mb-4 flex items-center">
+                            <Bell className="mr-2" /> お知らせ
+                        </h2>
                         {notifications.length > 0 ? (
                             <ul className="space-y-4">
                                 {unresolvedQuestions.map((question) => (
@@ -86,15 +89,19 @@ export default function MyPage() {
                         )}
                     </div>
                     <div className="flex space-x-4">
-                        <Button asChild className="bg-blue-500 text-white">
-                            <Link href="/">トップページに戻る</Link>
+                        <Button asChild variant="outline">
+                            <Link href="/">
+                                <Home className="mr-2" /> トップページに戻る
+                            </Link>
                         </Button>
-                        <Button asChild className="bg-yellow-500 text-white">
-                            <Link href="/profile">プロフィールを更新</Link>
+                        <Button asChild>
+                            <Link href="/profile">
+                                <UserCircle className="mr-2" /> プロフィールを更新
+                            </Link>
                         </Button>
                     </div>
                 </CardContent>
             </Card>
         </div>
     );
-} 
+}

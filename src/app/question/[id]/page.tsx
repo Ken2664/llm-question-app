@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase } from '../../../utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Send } from 'lucide-react';
 
 export default function QuestionDetailPage() {
     const router = useRouter();
@@ -78,50 +79,55 @@ export default function QuestionDetailPage() {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <Card>
+            <Card className="mb-8">
                 <CardHeader>
-                    <CardTitle>質問詳細</CardTitle>
+                    <CardTitle className="text-2xl font-bold">質問詳細</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col space-y-2">
-                        <div className="self-end bg-blue-500 text-white p-3 rounded-lg max-w-xs">
-                            <strong>質問:</strong> {question.question_text}
+                    <div className="flex flex-col space-y-4">
+                        <div className="self-end bg-blue-500 text-white p-4 rounded-lg max-w-xs">
+                            <strong className="block mb-1">質問:</strong>
+                            <p>{question.question_text}</p>
                         </div>
-                        <div className="self-start bg-gray-200 p-3 rounded-lg max-w-xs">
-                            <strong>回答:</strong> {question.answer_text || '未回答'}
+                        <div className="self-start bg-gray-200 p-4 rounded-lg max-w-xs">
+                            <strong className="block mb-1">回答:</strong>
+                            <p>{question.answer_text || '未回答'}</p>
                         </div>
                     </div>
                 </CardContent>
             </Card>
-            <div className="mt-8">
-                <h2 className="text-xl font-semibold mb-4">コメント</h2>
-                <ul className="space-y-4">
-                    {comments.map((comment) => (
-                        <li key={comment.id} className="card">
-                            <p>{comment.comment_text}</p>
-                            <small>{new Date(comment.created_at).toLocaleString()}</small>
-                        </li>
-                    ))}
-                </ul>
-                <Textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="コメントを入力してください"
-                    className="w-full p-2 border rounded mt-4"
-                />
-                <Button
-                    onClick={handleCommentSubmit}
-                    className="w-full mt-2"
-                >
-                    コメントを送信
-                </Button>
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-xl font-semibold">コメント</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ul className="space-y-4 mb-4">
+                        {comments.map((comment) => (
+                            <li key={comment.id} className="bg-gray-100 p-4 rounded-lg">
+                                <p className="mb-2">{comment.comment_text}</p>
+                                <small className="text-gray-500">{new Date(comment.created_at).toLocaleString()}</small>
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="space-y-4">
+                        <Textarea
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            placeholder="コメントを入力してください"
+                        />
+                        <Button onClick={handleCommentSubmit} className="w-full">
+                            <Send className="mr-2" /> コメントを送信
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
             <Button 
                 onClick={() => router.back()}
-                className="w-full mt-4 bg-red-500 text-white"
+                variant="outline"
+                className="w-full mt-4"
             >
-                戻る
+                <ArrowLeft className="mr-2" /> 戻る
             </Button>
         </div>
     );
-} 
+}
