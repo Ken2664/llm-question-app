@@ -67,12 +67,39 @@ export default function Home() {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
+
+      if (session?.user) {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('name, faculty_id, role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (error) {
+          console.error('Error fetching user data:', error)
+        } else if (!userData || !userData.name || !userData.faculty_id || !userData.role) {
+          router.push('/profile')
+        }
+      }
     }
 
     getSession()
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('name, faculty_id, role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (error) {
+          console.error('Error fetching user data:', error)
+        } else if (!userData || !userData.name || !userData.faculty_id || !userData.role) {
+          router.push('/profile')
+        }
+      }
     })
 
     return () => {
@@ -219,7 +246,7 @@ export default function Home() {
                         <SelectTrigger>
                           <SelectValue placeholder="学部を選択してください" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           {faculties.map((faculty) => (
                             <SelectItem key={faculty.faculty_id} value={faculty.faculty_id.toString()}>
                               {faculty.name}
@@ -231,7 +258,7 @@ export default function Home() {
                         <SelectTrigger>
                           <SelectValue placeholder="講義名を選択してください" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           {courses.map((course) => (
                             <SelectItem key={course.course_id} value={course.course_id.toString()}>
                               {course.name}

@@ -16,7 +16,7 @@ interface Question {
 export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
     const [unresolvedQuestions, setUnresolvedQuestions] = useState<Question[]>([]);
-    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<string[]>([]);
 
     useEffect(() => {
         const getSession = async () => {
@@ -30,36 +30,42 @@ export default function MyPage() {
     useEffect(() => {
         if (!user) return;
 
-        const fetchUnresolvedQuestions = async () => {
-            const { data, error } = await supabase
+        const fetchData = async () => {
+            // 未解決の質問を取得
+            const { data: questionsData, error: questionsError } = await supabase
                 .from('questions')
                 .select('id, question_text')
                 .eq('user_id', user.id)
                 .eq('solved', false);
 
-            if (error) {
-                console.error('Error fetching unresolved questions:', error);
+            if (questionsError) {
+                console.error('未解決の質問の取得エラー:', questionsError);
             } else {
-                setUnresolvedQuestions(data as Question[]);
+                const questions = questionsData as Question[];
+                setUnresolvedQuestions(questions);
+
+                // コメントが存在する質問IDを取得
+                const questionIds = questions.map(q => q.id);
+                if (questionIds.length > 0) {
+                    const { data: commentsData, error: commentsError } = await supabase
+                        .from('comments')
+                        .select('question_id')
+                        .in('question_id', questionIds);
+
+                    if (commentsError) {
+                        console.error('コメントの取得エラー:', commentsError);
+                    } else {
+                        const notifiedQuestionIds = (commentsData as any[]).map(comment => comment.question_id);
+                        setNotifications(notifiedQuestionIds);
+                    }
+                } else {
+                    setNotifications([]);
+                }
             }
         };
 
-        const fetchNotifications = async () => {
-            const { data, error } = await supabase
-                .from('comments')
-                .select('question_id')
-                .in('question_id', unresolvedQuestions.map(q => q.id));
-
-            if (error) {
-                console.error('Error fetching notifications:', error);
-            } else {
-                setNotifications(data.map((comment: any) => comment.question_id));
-            }
-        };
-
-        fetchUnresolvedQuestions();
-        fetchNotifications();
-    }, [user, unresolvedQuestions]);
+        fetchData();
+    }, [user]);
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">

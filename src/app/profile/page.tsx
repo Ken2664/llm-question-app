@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Save } from 'lucide-react';
+import { AlertCircle, Save, Plus } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ProfilePage() {
@@ -20,9 +20,17 @@ export default function ProfilePage() {
     const [selectedFaculty, setSelectedFaculty] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [role, setRole] = useState<string>('');
+    const [newFaculty, setNewFaculty] = useState('');
+    const [showAddFaculty, setShowAddFaculty] = useState(false);
     const router = useRouter();
 
     const isProfileComplete = name && selectedFaculty && role;
+
+    const fetchFaculties = async () => {
+        const { data, error } = await supabase.from('faculties').select('faculty_id, name');
+        if (error) console.error('Error fetching faculties:', error);
+        else setFaculties(data || []);
+    };
 
     useEffect(() => {
         const getSession = async () => {
@@ -32,37 +40,37 @@ export default function ProfilePage() {
             if (session?.user) {
                 const { data: userData, error } = await supabase
                     .from('users')
-                    .select('role')
+                    .select('name, faculty_id, role')
                     .eq('id', session.user.id)
                     .single();
 
                 if (error) {
                     console.error('Error fetching user role:', error);
-                } else if (!userData) {
-                    setRole('');
                 } else {
-                    setRole(userData.role);
-                    if (userData.name && userData.faculty_id) {
-                        router.push('/mypage');
-                    }
+                    setName(userData.name || '');
+                    setSelectedFaculty(userData.faculty_id?.toString() || '');
+                    setRole(userData.role || '');
                 }
             }
         };
 
         getSession();
-
-        const fetchFaculties = async () => {
-            const { data, error } = await supabase.from('faculties').select('faculty_id, name');
-            if (error) console.error('Error fetching faculties:', error);
-            else setFaculties(data || []);
-        };
-
         fetchFaculties();
     }, []);
 
     const handleSaveProfile = async () => {
         if (!user) {
             setError('ユーザーがログインしていません');
+            return;
+        }
+
+        if (!name) {
+            setError('名前を入力してください');
+            return;
+        }
+
+        if (!selectedFaculty) {
+            setError('学部を選択してください');
             return;
         }
 
@@ -95,12 +103,17 @@ export default function ProfilePage() {
         }
     };
 
-    const navigateToMyPage = () => {
-        router.push('/mypage');
-    };
-
-    const navigateToHome = () => {
-        router.push('/');
+    const addNewFaculty = async () => {
+        if (!newFaculty) return;
+        const { data, error } = await supabase.from('faculties').insert([{ name: newFaculty }]);
+        if (error) {
+            console.error('Error adding faculty:', error);
+            setError('学部の追加に失敗しました');
+        } else {
+            setNewFaculty('');
+            setShowAddFaculty(false);
+            fetchFaculties();
+        }
     };
 
     return (
@@ -123,10 +136,10 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                         <Label htmlFor="faculty">学部</Label>
                         <Select onValueChange={setSelectedFaculty} value={selectedFaculty}>
-                            <SelectTrigger id="faculty">
+                            <SelectTrigger id="faculty" className="bg-white">
                                 <SelectValue placeholder="学部を選択してください" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                                 {faculties.map((faculty) => (
                                     <SelectItem key={faculty.faculty_id} value={faculty.faculty_id.toString()}>
                                         {faculty.name}
@@ -134,14 +147,33 @@ export default function ProfilePage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowAddFaculty(!showAddFaculty)}
+                            className="w-full"
+                        >
+                            {showAddFaculty ? 'キャンセル' : '学部を追加'} <Plus className="ml-2 h-4 w-4" />
+                        </Button>
+                        {showAddFaculty && (
+                            <div className="flex space-x-2">
+                                <Input
+                                    type="text"
+                                    value={newFaculty}
+                                    onChange={(e) => setNewFaculty(e.target.value)}
+                                    placeholder="新しい学部名"
+                                />
+                                <Button type="button" onClick={addNewFaculty}>追加</Button>
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="role">役職</Label>
                         <Select onValueChange={setRole} value={role}>
-                            <SelectTrigger id="role">
+                            <SelectTrigger id="role" className="bg-white">
                                 <SelectValue placeholder="役職を選択してください" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white">
                                 <SelectItem value="teacher">教師</SelectItem>
                                 <SelectItem value="student">学生</SelectItem>
                             </SelectContent>
@@ -150,6 +182,11 @@ export default function ProfilePage() {
                     <Button onClick={handleSaveProfile} className="w-full" disabled={!isProfileComplete}>
                         <Save className="mr-2" /> プロフィールを保存
                     </Button>
+                    <Button asChild variant="outline" className="w-full mt-4">
+                        <Link href="/mypage">
+                            マイページに戻る
+                        </Link>
+                    </Button>
                     {error && (
                         <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
@@ -157,14 +194,6 @@ export default function ProfilePage() {
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     )}
-                    <div className="flex space-x-4 mt-4">
-                        <Button onClick={navigateToMyPage} variant="secondary">
-                            マイページに戻る
-                        </Button>
-                        <Button onClick={navigateToHome} variant="secondary">
-                            トップページに戻る
-                        </Button>
-                    </div>
                 </CardContent>
             </Card>
         </div>
