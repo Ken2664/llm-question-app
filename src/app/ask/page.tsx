@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card"
 import { ChatMessage } from "@/components/chat-message"
 import React from 'react'
+import { LoadingSpinner } from '@/components/ui/loading'
 
 export default function AskPage() {
   const [question, setQuestion] = useState('')
@@ -40,11 +41,16 @@ export default function AskPage() {
   const [solved, setSolved] = useState<boolean | null>(null)
   const [showAddFaculty, setShowAddFaculty] = useState(false)
   const [showAddCourse, setShowAddCourse] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchFaculties()
-    fetchCourses()
-    fetchUserFaculty()
+    const initializeData = async () => {
+      await fetchFaculties()
+      await fetchCourses()
+      await fetchUserFaculty()
+      setIsLoading(false)
+    }
+    initializeData()
   }, [])
 
   const fetchFaculties = async () => {
@@ -60,10 +66,12 @@ export default function AskPage() {
   }
 
   const fetchUserFaculty = async () => {
+    setIsLoading(true)
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     if (sessionError || !sessionData.session) {
       console.error('Error fetching session:', sessionError)
       setError('セッションが無効です。再度ログインしてください。')
+      setIsLoading(false)
       return
     }
 
@@ -79,6 +87,7 @@ export default function AskPage() {
     } else {
       setSelectedFaculty(data?.faculty_id || null)
     }
+    setIsLoading(false)
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -208,6 +217,14 @@ export default function AskPage() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <nav className="mb-8">
@@ -222,11 +239,16 @@ export default function AskPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Select onValueChange={(value) => setSelectedFaculty(Number(value))}>
+              <Select
+                onValueChange={(value) => setSelectedFaculty(Number(value))}
+                defaultValue={selectedFaculty?.toString()}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="学部を選択してください" />
+                  <SelectValue placeholder="学部を選択してください">
+                    {selectedFaculty && faculties.find(faculty => faculty.faculty_id === selectedFaculty)?.name}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {faculties.map((faculty) => (
                     <SelectItem key={faculty.faculty_id} value={faculty.faculty_id.toString()}>
                       {faculty.name}
@@ -260,7 +282,7 @@ export default function AskPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="講義名を選択してください" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {courses.map((course) => (
                     <SelectItem key={course.course_id} value={course.course_id.toString()}>
                       {course.name}

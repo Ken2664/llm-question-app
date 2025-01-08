@@ -17,11 +17,26 @@ export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
     const [unresolvedQuestions, setUnresolvedQuestions] = useState<Question[]>([]);
     const [notifications, setNotifications] = useState<string[]>([]);
+    const [isTeacher, setIsTeacher] = useState(false);
 
     useEffect(() => {
         const getSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             setUser(session?.user ?? null);
+
+            if (session?.user) {
+                const { data: userData, error } = await supabase
+                    .from('users')
+                    .select('role')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (error) {
+                    console.error('Error fetching user role:', error);
+                } else if (userData?.role === 'teacher') {
+                    setIsTeacher(true);
+                }
+            }
         };
 
         getSession();
@@ -105,6 +120,13 @@ export default function MyPage() {
                                 <UserCircle className="mr-2" /> プロフィールを更新
                             </Link>
                         </Button>
+                        {isTeacher && (
+                            <Button asChild>
+                                <Link href="/teacher">
+                                    <UserCircle className="mr-2" /> 教員用ページ
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </CardContent>
             </Card>

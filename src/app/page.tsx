@@ -55,7 +55,11 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [faculties, setFaculties] = useState<{ faculty_id: number; name: string }[]>([])
-  const [courses, setCourses] = useState<{ course_id: number; name: string }[]>([])
+  const [courses, setCourses] = useState<{ 
+    course_id: number; 
+    name: string; 
+    faculties: { name: string; }[];
+  }[]>([])
   const [selectedFaculty, setSelectedFaculty] = useState<string>('')
   const [selectedCourse, setSelectedCourse] = useState<string>('')
   const [selectedLectureDate, setSelectedLectureDate] = useState<string>('')
@@ -115,7 +119,15 @@ export default function Home() {
     }
 
     const fetchCourses = async () => {
-      const { data, error } = await supabase.from('courses').select('course_id, name')
+      const { data, error } = await supabase
+        .from('courses')
+        .select(`
+          course_id,
+          name,
+          faculties (
+            name
+          )
+        `)
       if (error) console.error('Error fetching courses:', error)
       else setCourses(data || [])
     }
@@ -260,9 +272,18 @@ export default function Home() {
                         </SelectTrigger>
                         <SelectContent className="bg-white">
                           {courses.map((course) => (
-                            <SelectItem key={course.course_id} value={course.course_id.toString()}>
-                              {course.name}
-                            </SelectItem>
+                            <SelectContent className="bg-white">
+                            {courses.map((course) => {
+                              // facultiesが単一オブジェクトの場合、配列に変換
+                              const facultiesArray = Array.isArray(course.faculties) ? course.faculties : [course.faculties];
+                              
+                              return (
+                                <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                                  {course.name} ({facultiesArray.map(faculty => faculty.name).join(', ')})
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
                           ))}
                         </SelectContent>
                       </Select>
