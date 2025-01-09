@@ -8,23 +8,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
+import { LoadingSpinner } from "@/components/ui/loading";
 
 interface Question {
     id: string;
     question_text: string;
+    lecture_id: number;
+    course_id: number;
 }
 
 interface Course {
     course_id: number;
     name: string;
+    faculties: { name: string }[];
 }
 
 export default function TeacherPage() {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
-    const [unresolvedQuestionsByCourse, setUnresolvedQuestionsByCourse] = useState<Record<string, Question[]>>({});
+    const [loading, setLoading] = useState<boolean>(true);
+    const [unresolvedQuestionsByCourse, setUnresolvedQuestionsByCourse] = useState<Record<number, Question[]>>({});
     const [courses, setCourses] = useState<Course[]>([]);
     const [selectedCourse, setSelectedCourse] = useState<string>('');
+    const [allCourses, setAllCourses] = useState<Course[]>([]);
 
     useEffect(() => {
         const getSession = async () => {
@@ -45,6 +51,7 @@ export default function TeacherPage() {
             } else {
                 router.push('/');
             }
+            setLoading(false);
         };
 
         getSession();
@@ -53,53 +60,114 @@ export default function TeacherPage() {
     useEffect(() => {
         if (!user) return;
 
-        const fetchUnresolvedQuestionsByCourse = async () => {
-            const { data: coursesData, error: coursesError } = await supabase
+        const fetchAssignedCourses = async () => {
+            const { data: assignedCoursesData, error: assignedCoursesError } = await supabase
                 .from('courses')
-                .select('course_id, name')
+                .select(`
+                    course_id,
+                    name,
+                    faculties (
+                        name
+                    )
+                `)
                 .eq('teacher_id', user.id);
 
-            if (coursesError) {
-                console.error('コースの取得エラー:', coursesError);
+            if (assignedCoursesError) {
+                console.error('担当教科の取得エラー:', assignedCoursesError);
                 return;
             }
 
-            const courses = coursesData || [];
-            setCourses(courses);
+            setCourses(assignedCoursesData || []);
+        };
 
-            const unresolvedQuestionsByCourse: Record<string, Question[]> = {};
+        const fetchAllCourses = async () => {
+            const { data: allCoursesData, error: allCoursesError } = await supabase
+                .from('courses')
+                .select(`
+                    course_id,
+                    name,
+                    faculties (
+                        name
+                    )
+                `);
 
-            for (const course of courses) {
-                const { data: lectureIdsData, error: lectureIdsError } = await supabase
-                    .from('lectures')
-                    .select('id')
-                    .eq('course_id', course.course_id);
-
-                if (lectureIdsError) {
-                    console.error('講義IDの取得エラー:', lectureIdsError);
-                    continue;
-                }
-
-                const lectureIds = lectureIdsData?.map(lecture => lecture.id) || [];
-
-                const { data: questionsData, error: questionsError } = await supabase
-                    .from('questions')
-                    .select('id, question_text')
-                    .in('lecture_id', lectureIds)
-                    .is('solved', false);
-
-                if (questionsError) {
-                    console.error('未解決の質問の取得エラー:', questionsError);
-                } else {
-                    unresolvedQuestionsByCourse[course.name] = questionsData || [];
-                }
+            if (allCoursesError) {
+                console.error('すべての教科の取得エラー:', allCoursesError);
+                return;
             }
 
-            setUnresolvedQuestionsByCourse(unresolvedQuestionsByCourse);
+            setAllCourses(allCoursesData || []);
+        };
+
+        fetchAssignedCourses();
+        fetchAllCourses();
+    }, [user]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUnresolvedQuestionsByCourse = async () => {
+            const { data: unresolvedQuestionsData, error: unresolvedQuestionsError } = await supabase
+                .from('questions')
+                .select(`
+                    id,
+                    question_text,
+                    lecture_id,
+                    lectures (
+                        course_id
+                    )
+                `)
+                .eq('solved', false);
+
+            if (unresolvedQuestionsError) {
+                console.error('未解決の質問の取得エラー:', unresolvedQuestionsError);
+                return;
+            }
+
+            const questionsByCourse = unresolvedQuestionsData.reduce((acc: Record<number, Question[]>, question) => {
+                const lectures = Array.isArray(question.lectures) ? question.lectures : [question.lectures];
+                const courseId = lectures[0]?.course_id;
+                if (!acc[courseId]) {
+                    acc[courseId] = [];
+                }
+                acc[courseId].push({
+                    ...question,
+                    course_id: courseId
+                });
+                return acc;
+            }, {});
+
+            setUnresolvedQuestionsByCourse(questionsByCourse);
         };
 
         fetchUnresolvedQuestionsByCourse();
-    }, [user]);
+    }, [user, courses]);
+
+    if (loading) {
+        return <LoadingSpinner size="lg" className="mt-20" />;
+    }
+
+    const fetchAssignedCourses = async () => {
+        if (!user) return;
+
+        const { data: assignedCoursesData, error: assignedCoursesError } = await supabase
+            .from('courses')
+            .select(`
+                course_id,
+                name,
+                faculties (
+                    name
+                )
+            `)
+            .eq('teacher_id', user.id);
+
+        if (assignedCoursesError) {
+            console.error('担当教科の取得エラー:', assignedCoursesError);
+            return;
+        }
+
+        setCourses(assignedCoursesData || []);
+    };
 
     const handleCourseRegistration = async () => {
         if (!selectedCourse) return;
@@ -107,13 +175,18 @@ export default function TeacherPage() {
         const { error: updateError } = await supabase
             .from('courses')
             .update({ teacher_id: user?.id })
-            .eq('id', selectedCourse);
+            .eq('course_id', selectedCourse);
 
         if (updateError) {
             console.error('コースのteacher_id更新エラー:', updateError);
         } else {
             alert('コースが登録され、teacher_idが更新されました');
+            fetchAssignedCourses();
         }
+    };
+
+    const handleBackToHome = () => {
+        router.push('/');
     };
 
     return (
@@ -129,7 +202,7 @@ export default function TeacherPage() {
                             <div key={course.course_id} className="mb-6">
                                 <h3 className="text-lg font-semibold">{course.name}</h3>
                                 <ul className="space-y-4">
-                                    {unresolvedQuestionsByCourse[course.name]?.map(question => (
+                                    {unresolvedQuestionsByCourse[course.course_id]?.map(question => (
                                         <li key={question.id} className="border p-4 rounded-lg hover:bg-gray-100 transition">
                                             <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
                                                 <strong>質問:</strong> {question.question_text}
@@ -141,23 +214,29 @@ export default function TeacherPage() {
                         ))}
                     </div>
                     <div className="mb-10">
-                        <h2 className="text-xl font-semibold mb-4">担当教科を登録</h2>
+                        <h2 className="text-xl font-semibold mb-4">講義名を選択</h2>
                         <Select onValueChange={setSelectedCourse} value={selectedCourse}>
                             <SelectTrigger>
-                                <SelectValue placeholder="教科を選択してください" />
+                                <SelectValue placeholder="講義を選択してください" />
                             </SelectTrigger>
                             <SelectContent className="bg-white">
-                                {courses.map((course) => (
-                                    <SelectItem key={course.course_id} value={course.course_id.toString()}>
-                                        {course.name}
-                                    </SelectItem>
-                                ))}
+                                {allCourses.map((course) => {
+                                    const facultiesArray = Array.isArray(course.faculties) ? course.faculties : [course.faculties];
+                                    return (
+                                        <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                                            {course.name} ({facultiesArray.map(faculty => faculty.name).join(', ')})
+                                        </SelectItem>
+                                    );
+                                })}
                             </SelectContent>
                         </Select>
                         <Button onClick={handleCourseRegistration} className="mt-4">
                             登録
                         </Button>
                     </div>
+                    <Button onClick={handleBackToHome} className="mt-4">
+                        トップページに戻る
+                    </Button>
                 </CardContent>
             </Card>
         </div>
