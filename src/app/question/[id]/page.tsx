@@ -69,8 +69,20 @@ export default function QuestionDetailPage() {
 
         const userId = sessionData.session.user.id;
 
+        // Check if the user is a teacher
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (userError || userData?.role !== 'teacher') {
+            console.error('User is not a teacher or error fetching user role:', userError);
+            return;
+        }
+
         const { data, error } = await supabase
-            .from('comments')
+            .from('teach_comments')
             .insert([{ question_id: id, user_id: userId, comment_text: commentText }]);
 
         if (error) {

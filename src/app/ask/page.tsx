@@ -26,7 +26,7 @@ import { ChatMessage } from "@/components/chat-message"
 import React from 'react'
 import { LoadingSpinner } from '@/components/ui/loading'
 import OpenAI from "openai";
-import MathJaxWrapper from '@/components/MathJaxWrapper'
+
 
 const deepSeek = new OpenAI({
   baseURL: 'https://api.deepseek.com',

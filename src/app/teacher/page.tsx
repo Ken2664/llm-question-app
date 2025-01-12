@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from "@/components/ui/loading";
-import { Home, BookOpen, PlusCircle } from 'lucide-react';
+import { Home, BookOpen, PlusCircle, Trash2 } from 'lucide-react';
 
 interface Question {
     id: string;
@@ -108,6 +108,17 @@ export default function TeacherPage() {
         if (!user) return;
 
         const fetchUnresolvedQuestionsByCourse = async () => {
+            const { data: teachCommentIds, error: teachCommentError } = await supabase
+                .from('teach_comments')
+                .select('question_id');
+
+            if (teachCommentError) {
+                console.error('Error fetching teach comments:', teachCommentError);
+                return;
+            }
+
+            const questionIdsToExclude = teachCommentIds.map(comment => comment.question_id);
+
             const { data: unresolvedQuestionsData, error: unresolvedQuestionsError } = await supabase
                 .from('questions')
                 .select(`
@@ -118,7 +129,8 @@ export default function TeacherPage() {
                         course_id
                     )
                 `)
-                .eq('solved', false);
+                .eq('solved', false)
+                .not('id', 'in', `(${questionIdsToExclude.join(',')})`);
 
             if (unresolvedQuestionsError) {
                 console.error('未解決の質問の取得エラー:', unresolvedQuestionsError);
@@ -190,6 +202,22 @@ export default function TeacherPage() {
         }
     };
 
+    const handleCourseDeletion = async (courseId: number) => {
+        if (!user) return;
+
+        const { error: updateError } = await supabase
+            .from('courses')
+            .update({ teacher_id: null })
+            .eq('course_id', courseId);
+
+        if (updateError) {
+            console.error('コースのteacher_id削除エラー:', updateError);
+        } else {
+            alert('コースのteacher_idが削除されました');
+            fetchAssignedCourses();
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <Card className="mb-8">
@@ -207,8 +235,13 @@ export default function TeacherPage() {
                         </h2>
                         {courses.map(course => (
                             <Card key={course.course_id} className="mb-6">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">{course.name}</CardTitle>
+                                <CardHeader className="flex flex-row items-center justify-between py-4">
+                                    <div className="flex flex-row items-center justify-between w-full">
+                                        <CardTitle className="text-lg">{course.name}</CardTitle>
+                                        <Button onClick={() => handleCourseDeletion(course.course_id)} variant="ghost" size="icon" className="">
+                                            <Trash2 className="h-5 w-5" />
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     <ul className="space-y-4">
@@ -233,7 +266,7 @@ export default function TeacherPage() {
                         </CardHeader>
                         <CardContent>
                             <Select onValueChange={setSelectedCourse} value={selectedCourse}>
-                                <SelectTrigger>
+                                <SelectTrigger className="mb-4">
                                     <SelectValue placeholder="講義を選択してください" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -247,7 +280,7 @@ export default function TeacherPage() {
                                     })}
                                 </SelectContent>
                             </Select>
-                            <Button onClick={handleCourseRegistration} className="mt-4 w-full">
+                            <Button onClick={handleCourseRegistration} className="w-full">
                                 登録
                             </Button>
                         </CardContent>
