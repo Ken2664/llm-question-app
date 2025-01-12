@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from "@/components/ui/loading";
+import { Home, BookOpen, PlusCircle } from 'lucide-react';
 
 interface Question {
     id: string;
@@ -144,7 +145,11 @@ export default function TeacherPage() {
     }, [user, courses]);
 
     if (loading) {
-        return <LoadingSpinner size="lg" className="mt-20" />;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner size="lg" />
+            </div>
+        );
     }
 
     const fetchAssignedCourses = async () => {
@@ -185,60 +190,75 @@ export default function TeacherPage() {
         }
     };
 
-    const handleBackToHome = () => {
-        router.push('/');
-    };
-
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <Card>
+            <Card className="mb-8">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold">教員用ページ</CardTitle>
+                    <CardTitle className="text-2xl font-bold flex items-center">
+                        <BookOpen className="mr-2" />
+                        教員用ページ
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="mb-10">
-                        <h2 className="text-xl font-semibold mb-4">担当教科ごとの未解決の質問</h2>
+                        <h2 className="text-xl font-semibold mb-4 flex items-center">
+                            <BookOpen className="mr-2" />
+                            担当教科ごとの未解決の質問
+                        </h2>
                         {courses.map(course => (
-                            <div key={course.course_id} className="mb-6">
-                                <h3 className="text-lg font-semibold">{course.name}</h3>
-                                <ul className="space-y-4">
-                                    {unresolvedQuestionsByCourse[course.course_id]?.map(question => (
-                                        <li key={question.id} className="border p-4 rounded-lg hover:bg-gray-100 transition">
-                                            <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
-                                                <strong>質問:</strong> {question.question_text}
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <Card key={course.course_id} className="mb-6">
+                                <CardHeader>
+                                    <CardTitle className="text-lg">{course.name}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ul className="space-y-4">
+                                        {unresolvedQuestionsByCourse[course.course_id]?.map(question => (
+                                            <li key={question.id} className="border p-4 rounded-lg hover:bg-gray-100 transition">
+                                                <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
+                                                    <strong>質問:</strong> {question.question_text}
+                                                </Link>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </CardContent>
+                            </Card>
                         ))}
                     </div>
-                    <div className="mb-10">
-                        <h2 className="text-xl font-semibold mb-4">講義名を選択</h2>
-                        <Select onValueChange={setSelectedCourse} value={selectedCourse}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="講義を選択してください" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white">
-                                {allCourses.map((course) => {
-                                    const facultiesArray = Array.isArray(course.faculties) ? course.faculties : [course.faculties];
-                                    return (
-                                        <SelectItem key={course.course_id} value={course.course_id.toString()}>
-                                            {course.name} ({facultiesArray.map(faculty => faculty.name).join(', ')})
-                                        </SelectItem>
-                                    );
-                                })}
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={handleCourseRegistration} className="mt-4">
-                            登録
-                        </Button>
-                    </div>
-                    <Button onClick={handleBackToHome} className="mt-4">
+                    <Card className="mb-6">
+                        <CardHeader>
+                            <CardTitle className="text-xl font-semibold flex items-center">
+                                <PlusCircle className="mr-2" />
+                                講義を登録
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Select onValueChange={setSelectedCourse} value={selectedCourse}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="講義を選択してください" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {allCourses.map((course) => {
+                                        const facultiesArray = Array.isArray(course.faculties) ? course.faculties : [course.faculties];
+                                        return (
+                                            <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                                                {course.name} ({facultiesArray.map(faculty => faculty.name).join(', ')})
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={handleCourseRegistration} className="mt-4 w-full">
+                                登録
+                            </Button>
+                        </CardContent>
+                    </Card>
+                    <Button onClick={() => router.push('/')} variant="outline" className="w-full">
+                        <Home className="mr-2" />
                         トップページに戻る
                     </Button>
                 </CardContent>
             </Card>
         </div>
     );
-} 
+}
+

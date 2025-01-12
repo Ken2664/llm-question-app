@@ -25,6 +25,14 @@ import {
 import { ChatMessage } from "@/components/chat-message"
 import React from 'react'
 import { LoadingSpinner } from '@/components/ui/loading'
+import OpenAI from "openai";
+import MathJaxWrapper from '@/components/MathJaxWrapper'
+
+const deepSeek = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: 'sk-fe9ccb5779f64d9a9ff8452566f7bf72',
+  dangerouslyAllowBrowser: true
+});
 
 export default function AskPage() {
   const [question, setQuestion] = useState('')
@@ -42,6 +50,8 @@ export default function AskPage() {
   const [showAddFaculty, setShowAddFaculty] = useState(false)
   const [showAddCourse, setShowAddCourse] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedModel, setSelectedModel] = useState('supabase')
+  const [aiResponse, setAiResponse] = useState<string>('')
 
   useEffect(() => {
     const initializeData = async () => {
@@ -100,22 +110,42 @@ export default function AskPage() {
         return
       }
 
-      const response = await fetch('/api/ask', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question, lectureDate: selectedLectureDate, courseId: selectedCourse, facultyId: selectedFaculty }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        setError(errorData.error || 'AIレスポンスの取得に失敗しました')
-        throw new Error('Failed to fetch AI response')
+      if (!selectedLectureDate) {
+        setError('日付を選択してください。');
+        return;
       }
 
-      const data = await response.json()
+      let data;
+      if (selectedModel === 'deepseek') {
+        const selectedCourseName = courses.find(course => course.course_id === selectedCourse)?.name || '';
+        const completion = await deepSeek.chat.completions.create({
+          messages: [
+            { role: "system", content: `あなたは${selectedCourseName}の教授です。` },
+            { role: "user", content: question }
+          ],
+          model: "deepseek-chat",
+        });
+        data = { answer: completion.choices[0].message.content };
+      } else {
+        const response = await fetch('/api/ask', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ question, lectureDate: selectedLectureDate, courseId: selectedCourse, facultyId: selectedFaculty }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setError(errorData.error || 'AIレスポンスの取得に失敗しました');
+          throw new Error('Failed to fetch AI response');
+        }
+
+        data = await response.json();
+      }
+
       console.log('API Response:', data)
+      setAiResponse(data.answer);
       setAnswer(data.answer)
       setChatHistory([...chatHistory, { question, answer: data.answer }])
       setError(null)
@@ -170,21 +200,23 @@ export default function AskPage() {
 
       const userId = sessionData.session.user.id
 
+      const lectureDateValue = selectedLectureDate || null;
+
       const { data: lectureData, error: lectureError } = await supabase
         .from('lectures')
         .select('id')
         .eq('course_id', selectedCourse)
-        .eq('date', selectedLectureDate)
-        .single()
+        .eq('date', lectureDateValue)
+        .single();
 
-      let lectureId = lectureData?.id
+      let lectureId = lectureData?.id;
 
       if (!lectureId) {
         const { data: newLectureData, error: newLectureError } = await supabase
           .from('lectures')
-          .insert([{ course_id: selectedCourse, number: 1, date: selectedLectureDate }])
+          .insert([{ course_id: selectedCourse, number: 1, date: lectureDateValue }])
           .select('id')
-          .single()
+          .single();
 
         if (newLectureError) {
           console.error('Error adding lecture:', newLectureError)
@@ -324,22 +356,15 @@ export default function AskPage() {
               rows={4}
             />
   
-            <div className="flex justify-between">
-              <Button
-                type="button"
-                variant={solved === true ? "default" : "outline"}
-                onClick={() => handleSolvedChange(true)}
-              >
-                <ThumbsUp className="mr-2 h-4 w-4" /> 解決済み
-              </Button>
-              <Button
-                type="button"
-                variant={solved === false ? "default" : "outline"}
-                onClick={() => handleSolvedChange(false)}
-              >
-                <ThumbsDown className="mr-2 h-4 w-4" /> 未解決
-              </Button>
-            </div>
+            <Select onValueChange={(value) => setSelectedModel(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="モデルを選択してください" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="gemini">Gemini1.5 Flash</SelectItem>
+                <SelectItem value="deepseek">DeepSeek</SelectItem>
+              </SelectContent>
+            </Select>
   
             <Button type="submit" className="w-full">
               <Send className="mr-2 h-4 w-4" /> 送信
@@ -369,6 +394,25 @@ export default function AskPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-between mt-4">
+        <Button
+          type="button"
+          variant={solved === true ? "default" : "outline"}
+          onClick={() => handleSolvedChange(true)}
+          className={solved === true ? "bg-green-500 text-white" : ""}
+        >
+          <ThumbsUp className="mr-2 h-4 w-4" /> 解決済み
+        </Button>
+        <Button
+          type="button"
+          variant={solved === false ? "default" : "outline"}
+          onClick={() => handleSolvedChange(false)}
+          className={solved === false ? "bg-red-500 text-white" : ""}
+        >
+          <ThumbsDown className="mr-2 h-4 w-4" /> 未解決
+        </Button>
+      </div>
     </div>
   )
 }

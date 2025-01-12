@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send } from 'lucide-react';
+import { ChatMessage } from '@/components/chat-message';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 export default function QuestionDetailPage() {
     const router = useRouter();
@@ -15,6 +17,7 @@ export default function QuestionDetailPage() {
     const [question, setQuestion] = useState<{ question_text: string; answer_text: string | null } | null>(null);
     const [commentText, setCommentText] = useState('');
     const [comments, setComments] = useState<{ id: string; comment_text: string; user_id: string; created_at: string }[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!id) return;
@@ -46,8 +49,13 @@ export default function QuestionDetailPage() {
             }
         };
 
-        fetchQuestion();
-        fetchComments();
+        const fetchData = async () => {
+            setIsLoading(true);
+            await Promise.all([fetchQuestion(), fetchComments()]);
+            setIsLoading(false);
+        };
+
+        fetchData();
     }, [id]);
 
     const handleCommentSubmit = async () => {
@@ -73,6 +81,10 @@ export default function QuestionDetailPage() {
         }
     };
 
+    if (isLoading) {
+        return <LoadingSpinner size="lg" className="my-8" />;
+    }
+
     if (!question) {
         return <div>Loading...</div>;
     }
@@ -85,14 +97,8 @@ export default function QuestionDetailPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col space-y-4">
-                        <div className="self-end bg-blue-500 text-white p-4 rounded-lg max-w-xs">
-                            <strong className="block mb-1">質問:</strong>
-                            <p>{question.question_text}</p>
-                        </div>
-                        <div className="self-start bg-gray-200 p-4 rounded-lg max-w-xs">
-                            <strong className="block mb-1">回答:</strong>
-                            <p>{question.answer_text || '未回答'}</p>
-                        </div>
+                        <ChatMessage role="user" content={question.question_text} />
+                        <ChatMessage role="assistant" content={question.answer_text || '未回答'} />
                     </div>
                 </CardContent>
             </Card>
