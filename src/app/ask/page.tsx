@@ -18,7 +18,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -51,7 +50,6 @@ export default function AskPage() {
   const [showAddCourse, setShowAddCourse] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedModel, setSelectedModel] = useState('supabase')
-  const [aiResponse, setAiResponse] = useState<string>('')
 
   useEffect(() => {
     const initializeData = async () => {
@@ -145,7 +143,6 @@ export default function AskPage() {
       }
 
       console.log('API Response:', data)
-      setAiResponse(data.answer);
       setAnswer(data.answer)
       setChatHistory([...chatHistory, { question, answer: data.answer }])
       setError(null)
@@ -202,7 +199,7 @@ export default function AskPage() {
 
       const lectureDateValue = selectedLectureDate || null;
 
-      const { data: lectureData, error: lectureError } = await supabase
+      const { data: lectureData} = await supabase
         .from('lectures')
         .select('id')
         .eq('course_id', selectedCourse)

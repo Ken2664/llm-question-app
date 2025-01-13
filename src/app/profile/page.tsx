@@ -105,7 +105,7 @@ export default function ProfilePage() {
 
     const addNewFaculty = async () => {
         if (!newFaculty) return;
-        const { data, error } = await supabase.from('faculties').insert([{ name: newFaculty }]);
+        const { error } = await supabase.from('faculties').insert([{ name: newFaculty }]);
         if (error) {
             console.error('Error adding faculty:', error);
             setError('学部の追加に失敗しました');

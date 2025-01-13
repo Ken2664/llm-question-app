@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Home, UserCircle, BookOpen, Check } from 'lucide-react';
+import { Bell, Home, UserCircle, BookOpen } from 'lucide-react';
 import { LoadingSpinner } from "@/components/ui/loading";
 
 interface Question {
@@ -46,12 +46,7 @@ export default function MyPage() {
         getSession();
     }, []);
 
-    useEffect(() => {
-        if (!user) return;
-        fetchData();
-    }, [user]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (!user) return;
 
         // 未解決の質問を取得
@@ -85,8 +80,8 @@ export default function MyPage() {
                 if (commentsError || teachCommentsError) {
                     console.error('コメントの取得エラー:', commentsError || teachCommentsError);
                 } else {
-                    const notifiedQuestionIds = (commentsData as any[]).map(comment => comment.question_id);
-                    const teachNotifiedIds = (teachCommentsData as any[]).map(comment => comment.question_id);
+                    const notifiedQuestionIds = (commentsData as { question_id: string }[]).map(comment => comment.question_id);
+                    const teachNotifiedIds = (teachCommentsData as { question_id: string }[]).map(comment => comment.question_id);
                     setTeachNotifiedQuestionIds(teachNotifiedIds);
                     setNotifications([...new Set([...notifiedQuestionIds, ...teachNotifiedIds])]);
                 }
@@ -95,7 +90,12 @@ export default function MyPage() {
                 setTeachNotifiedQuestionIds([]);
             }
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (!user) return;
+        fetchData();
+    }, [user, fetchData]);
 
     const markAsRead = async (questionId: string) => {
         // commentsテーブルのreadをTRUEに更新

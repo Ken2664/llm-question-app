@@ -42,7 +42,7 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeKatex]}
           components={{
-            h3: ({ node, ...props }) => (
+            h3: ({ ...props }) => (
               <h3 className="text-lg font-bold mt-4 mb-2" {...props} />
             ),
           }}
