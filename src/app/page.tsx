@@ -271,20 +271,16 @@ export default function Home() {
                           <SelectValue placeholder="講義名を選択してください" />
                         </SelectTrigger>
                         <SelectContent className="bg-white">
-                          {courses.map((course) => (
-                            <SelectContent className="bg-white">
-                            {courses.map((course) => {
-                              // facultiesが単一オブジェクトの場合、配列に変換
-                              const facultiesArray = Array.isArray(course.faculties) ? course.faculties : [course.faculties];
-                              
-                              return (
-                                <SelectItem key={course.course_id} value={course.course_id.toString()}>
-                                  {course.name} ({facultiesArray.map(faculty => faculty.name).join(', ')})
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                          ))}
+                          {courses.map((course) => {
+                            // facultiesが単一オブジェクトの場合、配列に変換
+                            const facultiesArray = Array.isArray(course.faculties) ? course.faculties : [course.faculties];
+                            
+                            return (
+                              <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                                {course.name} ({facultiesArray.map(faculty => faculty.name).join(', ')})
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     </div>
