@@ -20,6 +20,7 @@ export default function MyPage() {
     const [notifications, setNotifications] = useState<string[]>([]);
     const [isTeacher, setIsTeacher] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [teachNotifiedQuestionIds, setTeachNotifiedQuestionIds] = useState<string[]>([]);
 
     useEffect(() => {
         const getSession = async () => {
@@ -75,14 +76,23 @@ export default function MyPage() {
                     .in('question_id', questionIds)
                     .eq('read', false);
 
-                if (commentsError) {
-                    console.error('コメントの取得エラー:', commentsError);
+                const { data: teachCommentsData, error: teachCommentsError } = await supabase
+                    .from('teach_comments')
+                    .select('question_id')
+                    .in('question_id', questionIds)
+                    .eq('read', false);
+
+                if (commentsError || teachCommentsError) {
+                    console.error('コメントの取得エラー:', commentsError || teachCommentsError);
                 } else {
                     const notifiedQuestionIds = (commentsData as any[]).map(comment => comment.question_id);
-                    setNotifications(notifiedQuestionIds);
+                    const teachNotifiedIds = (teachCommentsData as any[]).map(comment => comment.question_id);
+                    setTeachNotifiedQuestionIds(teachNotifiedIds);
+                    setNotifications([...new Set([...notifiedQuestionIds, ...teachNotifiedIds])]);
                 }
             } else {
                 setNotifications([]);
+                setTeachNotifiedQuestionIds([]);
             }
         }
     };
@@ -100,6 +110,13 @@ export default function MyPage() {
             return;
         }
 
+        // 既読にした質問IDを通知リストから削除
+        setNotifications((prev) => prev.filter(id => id !== questionId));
+        // コメントを再度フェッチ
+        fetchData();
+    };
+
+    const markAsSolved = async (questionId: string) => {
         // questionsテーブルのsolvedをTRUEに更新
         const { error: questionsError } = await supabase
             .from('questions')
@@ -112,8 +129,8 @@ export default function MyPage() {
             return;
         }
 
-        // 既読にした質問IDを通知リストから削除
-        setNotifications((prev) => prev.filter(id => id !== questionId));
+        // 解決済みの質問を未解決リストから削除
+        setUnresolvedQuestions((prev) => prev.filter(q => q.id !== questionId));
         // コメントを再度フェッチ
         fetchData();
     };
@@ -144,20 +161,48 @@ export default function MyPage() {
                         </CardHeader>
                         <CardContent>
                             {notifications.length > 0 ? (
-                                <ul className="space-y-4">
-                                    {unresolvedQuestions.map((question) => (
-                                        notifications.includes(question.id) && (
-                                            <li key={question.id} className="border p-4 rounded-lg hover:bg-gray-100 transition flex justify-between items-center">
-                                                <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
-                                                    <strong>質問:</strong> {question.question_text}
-                                                </Link>
-                                                <Button onClick={() => markAsRead(question.id)} className="ml-4 border border-gray-300 rounded px-4 py-2 hover:bg-gray-200 transition">
-                                                    既読にする
-                                                </Button>
-                                            </li>
-                                        )
-                                    ))}
-                                </ul>
+                                <div>
+                                    <h3 className="text-lg font-bold mb-2">教員からのコメント</h3>
+                                    <ul className="space-y-4">
+                                        {unresolvedQuestions.map((question) => (
+                                            teachNotifiedQuestionIds.includes(question.id) && (
+                                                <li key={question.id} className="border p-4 rounded-lg bg-yellow-100 hover:bg-yellow-200 transition flex justify-between items-center">
+                                                    <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
+                                                        <strong>質問:</strong> {question.question_text}
+                                                    </Link>
+                                                    <div className="flex space-x-2">
+                                                        <Button onClick={() => markAsRead(question.id)} className="ml-4 border border-gray-300 rounded px-4 py-2 hover:bg-gray-200 transition">
+                                                            既読にする
+                                                        </Button>
+                                                        <Button onClick={() => markAsSolved(question.id)} className="ml-4 border border-green-300 rounded px-4 py-2 hover:bg-green-200 transition">
+                                                            解決
+                                                        </Button>
+                                                    </div>
+                                                </li>
+                                            )
+                                        ))}
+                                    </ul>
+                                    <h3 className="text-lg font-bold mt-6 mb-2">その他のコメント</h3>
+                                    <ul className="space-y-4">
+                                        {unresolvedQuestions.map((question) => (
+                                            !teachNotifiedQuestionIds.includes(question.id) && notifications.includes(question.id) && (
+                                                <li key={question.id} className="border p-4 rounded-lg hover:bg-gray-100 transition flex justify-between items-center">
+                                                    <Link href={`/question/${question.id}`} className="block text-lg text-blue-600 hover:underline">
+                                                        <strong>質問:</strong> {question.question_text}
+                                                    </Link>
+                                                    <div className="flex space-x-2">
+                                                        <Button onClick={() => markAsRead(question.id)} className="ml-4 border border-gray-300 rounded px-4 py-2 hover:bg-gray-200 transition">
+                                                            既読にする
+                                                        </Button>
+                                                        <Button onClick={() => markAsSolved(question.id)} className="ml-4 border border-green-300 rounded px-4 py-2 hover:bg-green-200 transition">
+                                                            解決
+                                                        </Button>
+                                                    </div>
+                                                </li>
+                                            )
+                                        ))}
+                                    </ul>
+                                </div>
                             ) : (
                                 <p className="text-gray-600">新しいコメントはありません。</p>
                             )}

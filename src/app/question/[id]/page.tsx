@@ -16,7 +16,7 @@ export default function QuestionDetailPage() {
     const id = params?.id as string;
     const [question, setQuestion] = useState<{ question_text: string; answer_text: string | null } | null>(null);
     const [commentText, setCommentText] = useState('');
-    const [comments, setComments] = useState<{ id: string; comment_text: string; user_id: string; created_at: string }[]>([]);
+    const [comments, setComments] = useState<{ id: string; comment_text: string; user_id: string; created_at: string; role: string | null }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -37,15 +37,40 @@ export default function QuestionDetailPage() {
         };
 
         const fetchComments = async () => {
-            const { data, error } = await supabase
+            const { data: commentsData, error: commentsError } = await supabase
                 .from('comments')
-                .select('*')
-                .eq('question_id', id);
+                .select('id, comment_text, user_id, created_at')
+                .eq('question_id', id)
+                .order('created_at', { ascending: true });
 
-            if (error) {
-                console.error('Error fetching comments:', error);
+            const { data: teachCommentsData, error: teachCommentsError } = await supabase
+                .from('teach_comments')
+                .select('id, comment_text, user_id, created_at')
+                .eq('question_id', id)
+                .order('created_at', { ascending: true });
+
+            if (commentsError || teachCommentsError) {
+                console.error('Error fetching comments:', commentsError || teachCommentsError);
             } else {
-                setComments(data);
+                const allComments = [...commentsData, ...teachCommentsData];
+
+                // Fetch roles for each user
+                const userIds = allComments.map(comment => comment.user_id);
+                const { data: usersData, error: usersError } = await supabase
+                    .from('users')
+                    .select('id, role')
+                    .in('id', userIds);
+
+                if (usersError) {
+                    console.error('Error fetching user roles:', usersError);
+                } else {
+                    const commentsWithRoles = allComments.map(comment => {
+                        const user = usersData.find(user => user.id === comment.user_id);
+                        return { ...comment, role: user?.role };
+                    });
+
+                    setComments(commentsWithRoles);
+                }
             }
         };
 
@@ -121,7 +146,10 @@ export default function QuestionDetailPage() {
                 <CardContent>
                     <ul className="space-y-4 mb-4">
                         {comments.map((comment) => (
-                            <li key={comment.id} className="bg-gray-100 p-4 rounded-lg">
+                            <li 
+                                key={comment.id} 
+                                className={`p-4 rounded-lg ${comment.role === 'teacher' ? 'bg-yellow-100' : 'bg-gray-100'}`}
+                            >
                                 <p className="mb-2">{comment.comment_text}</p>
                                 <small className="text-gray-500">{new Date(comment.created_at).toLocaleString()}</small>
                             </li>
