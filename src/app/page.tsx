@@ -109,7 +109,7 @@ export default function Home() {
     return () => {
       authListener.subscription.unsubscribe()
     }
-  }, [router])
+  }, [])
 
   useEffect(() => {
     const fetchFaculties = async () => {
@@ -272,9 +272,18 @@ export default function Home() {
                         </SelectTrigger>
                         <SelectContent className="bg-white">
                           {courses.map((course) => (
-                            <SelectItem key={course.course_id} value={course.course_id.toString()}>
-                              {course.name} ({course.faculties.map(faculty => faculty.name).join(', ')})
-                            </SelectItem>
+                            <SelectContent className="bg-white">
+                            {courses.map((course) => {
+                              // facultiesが単一オブジェクトの場合、配列に変換
+                              const facultiesArray = Array.isArray(course.faculties) ? course.faculties : [course.faculties];
+                              
+                              return (
+                                <SelectItem key={course.course_id} value={course.course_id.toString()}>
+                                  {course.name} ({facultiesArray.map(faculty => faculty.name).join(', ')})
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
                           ))}
                         </SelectContent>
                       </Select>
