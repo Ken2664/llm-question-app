@@ -107,6 +107,9 @@ export default function AskPage() {
     setError(null);
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒でタイムアウト
+
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !sessionData.session) {
             throw new Error('セッションが無効です。再度ログインしてください。');
@@ -142,7 +145,10 @@ export default function AskPage() {
                 courseId: selectedCourse,
                 facultyId: selectedFaculty
             }),
+            signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         const data = await response.json();
 
@@ -154,7 +160,13 @@ export default function AskPage() {
         setChatHistory([...chatHistory, { question, answer: data.answer }]);
     } catch (error) {
         console.error('Error fetching AI response:', error);
-        setError(error instanceof Error ? error.message : 'エラーが発生しました');
+        setError(
+            error instanceof Error 
+                ? (error.name === 'AbortError' 
+                    ? 'リクエストがタイムアウトしました。もう一度お試しください。' 
+                    : error.message)
+                : 'エラーが発生しました'
+        );
     } finally {
         setIsLoading(false);
         setIsAIProcessing(false);
