@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (model === 'deepseek') {
             const deepSeek = new OpenAI({
-                baseURL: 'https://api.deepseek.com',
+                baseURL: 'https://api.deepseek.com/v1',
                 apiKey: process.env.DEEPSEEK_API_KEY,
                 timeout: 15000,
             });
